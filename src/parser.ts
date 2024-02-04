@@ -3912,6 +3912,7 @@ export class Parser extends DiagnosticEmitter {
       case Token.Identifier: {
         let identifierText = tn.readIdentifier();
         if (identifierText == "null") return Node.createNullExpression(tn.range()); // special
+        if (identifierText == "undefined") return Node.createNullExpression(tn.range()); // special
         let identifier = Node.createIdentifierExpression(identifierText, tn.range(startPos, tn.pos));
         if (tn.skip(Token.TemplateLiteral)) {
           return this.parseTemplateLiteral(tn, identifier);

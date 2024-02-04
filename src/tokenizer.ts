@@ -335,6 +335,11 @@ export function tokenFromKeyword(text: string): Token {
       if (text == "typeof") return Token.TypeOf;
       break;
     }
+    case CharCode.u: {
+      // "undefined" is an alias for "null"
+      if (text == "undefined") return Token.Null;
+      break;
+    }
     case CharCode.v: {
       if (text == "var") return Token.Var;
       if (text == "void") return Token.Void;
