@@ -20,3 +20,7 @@ export type T10 = T6<T10>;
 export type T11 = T1 | null
 export type T12 = null | T1
 
+// class(syntactic-sugar)
+export type T13 = {
+  a: i32;
+};

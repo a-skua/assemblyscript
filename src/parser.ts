@@ -620,6 +620,7 @@ export class Parser extends DiagnosticEmitter {
       }
       if (!parameters) parameters = [];
       type = Node.createNamedType(name, parameters, false, tn.range(startPos, tn.pos));
+
     } else {
       if (!suppressErrors) {
         this.error(
@@ -3529,7 +3530,7 @@ export class Parser extends DiagnosticEmitter {
     flags: CommonFlags,
     decorators: DecoratorNode[] | null,
     startPos: i32
-  ): TypeDeclaration | null {
+  ): TypeDeclaration | ClassDeclaration | null {
 
     // at 'type': Identifier ('<' TypeParameters '>')? '=' '|'? Type ';'?
 
@@ -3543,6 +3544,53 @@ export class Parser extends DiagnosticEmitter {
       }
       if (tn.skip(Token.Equals)) {
         tn.skip(Token.Bar);
+
+        // '{' ClassMember* '}'
+        if (tn.skip(Token.OpenBrace)) {
+          // TODO parse typeParameters and extendsType
+          const typeParameters: TypeParameterNode[] | null = null;
+          const extendsType: NamedTypeNode | null = null;
+
+          const members = new Array<DeclarationStatement>();
+
+          // TODO common parseClassOrInterface
+          const declaration =  Node.createClassDeclaration(
+            name,
+            decorators,
+            flags,
+            typeParameters,
+            extendsType,
+            null,
+            members,
+            tn.range(startPos, tn.pos)
+          );
+          if (!tn.skip(Token.CloseBrace)) {
+            do {
+              let member = this.parseClassMember(tn, declaration);
+              if (member) {
+                if (member.kind == NodeKind.IndexSignature) {
+                  declaration.indexSignature = <IndexSignatureNode>member;
+                } else {
+                  assert(member instanceof DeclarationStatement);
+                  members.push(<DeclarationStatement>member);
+                }
+              } else {
+                this.skipStatement(tn);
+                if (tn.skip(Token.EndOfFile)) {
+                  this.error(
+                    DiagnosticCode._0_expected,
+                    tn.range(), "}"
+                  );
+                  return null;
+                }
+              }
+            } while (!tn.skip(Token.CloseBrace));
+          }
+          declaration.range.end = tn.pos;
+          declaration.overriddenModuleName = this.currentModuleName;
+          return declaration;
+        }
+
         let type = this.parseType(tn);
         if (!type) return null;
         if (isCircularTypeAlias(name.text, type)) {
@@ -3552,6 +3600,7 @@ export class Parser extends DiagnosticEmitter {
           );
           return null;
         }
+
         let ret = Node.createTypeDeclaration(
           name,
           decorators,
